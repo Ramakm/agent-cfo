@@ -1,6 +1,7 @@
 # agent-cfo
 
 Budget enforcement for autonomous agents.
+![alt text](image.png)
 
 Every agent run gets a dollar budget. `agent-cfo` tracks spend across model
 calls in real time and forces the agent to degrade gracefully — cheaper
