@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Secrets — never commit real API keys. Copy .env.example to .env locally.
+.env
+.env.*
+!.env.example
