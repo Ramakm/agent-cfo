@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>agent-cfo</title>
+<style>
+  :root {
+    --bg: #0b0d12;
+    --panel: #12151c;
+    --panel-2: #171b24;
+    --border: #262b36;
+    --text: #e6e8ec;
+    --text-dim: #8a8f9c;
+    --accent: #6ee7b7;
+    --accent-2: #60a5fa;
+    --warn: #f59e0b;
+    --danger: #f87171;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif;
+    display: flex;
+  }
+  #sidebar {
+    width: 300px;
+    min-width: 300px;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-2));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: #06120c; font-size: 15px;
+  }
+  .brand h1 { font-size: 16px; margin: 0; }
+  .brand span { font-size: 11px; color: var(--text-dim); }
+
+  .card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .card h2 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--text-dim); margin: 0 0 10px 0; font-weight: 600;
+  }
+
+  .budget-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+  .budget-row b { color: var(--text); }
+  .bar-track { height: 8px; border-radius: 6px; background: #1e232d; overflow: hidden; margin: 8px 0 4px; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .35s ease; }
+  .bar-fill.warn { background: linear-gradient(90deg, var(--warn), #fbbf24); }
+  .bar-fill.danger { background: linear-gradient(90deg, var(--danger), #ef4444); }
+  .fine { font-size: 11px; color: var(--text-dim); }
+
+  .ladder-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 10px; border-radius: 8px; margin-bottom: 6px;
+    background: #1a1f29; font-size: 12.5px; border: 1px solid transparent;
+  }
+  .ladder-item.active { border-color: var(--accent); background: #142019; }
+  .ladder-item .name { font-weight: 600; }
+  .ladder-item .price { color: var(--text-dim); font-size: 11px; }
+
+  .new-budget { display: flex; gap: 6px; }
+  .new-budget input {
+    flex: 1; background: #1a1f29; border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 8px 10px; font-size: 13px;
+  }
+  .new-budget button, .send-btn {
+    background: var(--accent); color: #06120c; border: none; border-radius: 8px;
+    padding: 8px 14px; font-weight: 600; font-size: 13px; cursor: pointer;
+  }
+  .new-budget button:hover, .send-btn:hover { filter: brightness(1.08); }
+
+  #events { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+  .event-row { font-size: 11px; color: var(--text-dim); display: flex; justify-content: space-between; gap: 8px; }
+  .event-row .tag { padding: 1px 6px; border-radius: 5px; font-size: 10px; font-weight: 700; }
+  .tag.allow { background: #14352a; color: var(--accent); }
+  .tag.downgrade { background: #3a2c11; color: var(--warn); }
+  .tag.deny { background: #3a1414; color: var(--danger); }
+
+  #main { flex: 1; display: flex; flex-direction: column; height: 100vh; }
+  #chat-header {
+    padding: 16px 24px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  #chat-header h2 { margin: 0; font-size: 15px; }
+  #chat-header .fine { margin-top: 2px; }
+
+  #messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+  .msg { max-width: 70%; padding: 12px 16px; border-radius: var(--radius); font-size: 14px; line-height: 1.5; }
+  .msg.user { align-self: flex-end; background: var(--accent-2); color: #051225; border-bottom-right-radius: 4px; }
+  .msg.assistant { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .msg.deny { border-color: var(--danger); background: #1f1414; }
+  .msg-meta { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+  .badge {
+    font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    background: #1e2530; color: var(--text-dim); border: 1px solid var(--border);
+  }
+  .badge.model { color: var(--accent); border-color: #234; }
+  .badge.downgrade { color: var(--warn); border-color: #432; }
+  .badge.cost { color: var(--accent-2); }
+
+  #composer {
+    padding: 16px 24px; border-top: 1px solid var(--border);
+    display: flex; gap: 10px; background: var(--panel);
+  }
+  #composer textarea {
+    flex: 1; resize: none; background: #1a1f29; color: var(--text);
+    border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px;
+    font-size: 14px; font-family: inherit; height: 48px;
+  }
+  #composer textarea:focus { outline: none; border-color: var(--accent-2); }
+
+  .empty-state { color: var(--text-dim); font-size: 13px; margin: auto; text-align: center; }
+  .empty-state b { color: var(--text); display: block; margin-bottom: 6px; font-size: 15px; }
+</style>
+</head>
+<body>
+
+<div id="sidebar">
+  <div class="brand">
+    <div class="brand-mark">$</div>
+    <div>
+      <h1>agent-cfo</h1>
+      <span>budget enforcement, live</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Session budget</h2>
+    <div class="new-budget">
+      <input id="budget-input" type="number" min="0.01" step="0.10" value="2.00" />
+      <button id="new-session-btn">New run</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Remaining</h2>
+    <div class="budget-row"><span>Remaining</span><b id="stat-remaining">$0.00</b></div>
+    <div class="bar-track"><div id="bar-fill" class="bar-fill" style="width:100%"></div></div>
+    <div class="fine"><span id="stat-settled">$0.00</span> settled · <span id="stat-outstanding">$0.00</span> reserved · of <span id="stat-total">$0.00</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Downgrade ladder</h2>
+    <div id="ladder"></div>
+  </div>
+
+  <div class="card">
+    <h2>Ledger events</h2>
+    <div id="events"><div class="fine">No calls yet.</div></div>
+  </div>
+</div>
+
+<div id="main">
+  <div id="chat-header">
+    <div>
+      <h2>Conversation</h2>
+      <div class="fine" id="session-fine">No active session — start a new run.</div>
+    </div>
+  </div>
+  <div id="messages">
+    <div class="empty-state">
+      <b>Start a run to chat with the budget-enforced agent</b>
+      Every message is priced before it's sent — the CFO reserves the worst-case cost,<br/>
+      downgrades the model when funds run low, and stops the run rather than blow the budget.
+    </div>
+  </div>
+  <div id="composer">
+    <textarea id="input" placeholder="Ask the agent something…" disabled></textarea>
+    <button class="send-btn" id="send-btn" disabled>Send</button>
+  </div>
+</div>
+
+<script>
+const state = { sessionId: null, ladder: [], pricing: {}, total: 0 };
+
+const $ = (id) => document.getElementById(id);
+
+function fmt(n) { return "$" + Number(n).toFixed(4).replace(/0+$/,"").replace(/\.$/,".0000").slice(0, 7); }
+function fmtShort(n) { return "$" + Number(n).toFixed(4); }
+
+function renderLadder(activeModel) {
+  const box = $("ladder");
+  box.innerHTML = "";
+  state.ladder.forEach((modelId) => {
+    const p = state.pricing[modelId] || {};
+    const row = document.createElement("div");
+    row.className = "ladder-item" + (modelId === activeModel ? " active" : "");
+    row.innerHTML = `<div><div class="name">${modelId}</div>
+      <div class="price">${p.tier || ""} · in $${(p.input_per_million ?? 0).toFixed(3)}/M · out $${(p.output_per_million ?? 0).toFixed(3)}/M</div></div>`;
+    box.appendChild(row);
+  });
+}
+
+function renderStats(snapshot) {
+  $("stat-remaining").textContent = fmtShort(snapshot.remaining);
+  $("stat-settled").textContent = fmtShort(snapshot.settled_total);
+  $("stat-outstanding").textContent = fmtShort(snapshot.outstanding);
+  $("stat-total").textContent = fmtShort(snapshot.budget);
+  const pct = Math.max(0, Math.min(100, (snapshot.remaining / snapshot.budget) * 100));
+  const fill = $("bar-fill");
+  fill.style.width = pct + "%";
+  fill.className = "bar-fill" + (pct < 15 ? " danger" : pct < 40 ? " warn" : "");
+}
+
+function renderEvents(events) {
+  const box = $("events");
+  if (!events.length) { box.innerHTML = '<div class="fine">No calls yet.</div>'; return; }
+  box.innerHTML = "";
+  events.slice().reverse().forEach((e) => {
+    const row = document.createElement("div");
+    row.className = "event-row";
+    if (e.kind === "deny") {
+      row.innerHTML = `<span class="tag deny">DENY</span><span>${e.reason}</span>`;
+    } else {
+      row.innerHTML = `<span class="tag ${e.action}">${e.action.toUpperCase()}</span><span>${e.model} · ${fmtShort(e.actual_cost)}</span>`;
+    }
+    box.appendChild(row);
+  });
+}
+
+function addMessage(msg) {
+  const messages = $("messages");
+  const empty = messages.querySelector(".empty-state");
+  if (empty) empty.remove();
+
+  const div = document.createElement("div");
+  div.className = "msg " + msg.role + (msg.action === "deny" ? " deny" : "");
+  div.textContent = msg.content;
+
+  if (msg.role === "assistant" && msg.model) {
+    const meta = document.createElement("div");
+    meta.className = "msg-meta";
+    const modelBadge = document.createElement("span");
+    modelBadge.className = "badge model";
+    modelBadge.textContent = msg.model;
+    meta.appendChild(modelBadge);
+    if (msg.action === "downgrade") {
+      const b = document.createElement("span");
+      b.className = "badge downgrade";
+      b.textContent = "downgraded";
+      meta.appendChild(b);
+    }
+    const costBadge = document.createElement("span");
+    costBadge.className = "badge cost";
+    costBadge.textContent = `est ${fmtShort(msg.estimated_cost)} → actual ${fmtShort(msg.actual_cost)}`;
+    meta.appendChild(costBadge);
+    div.appendChild(meta);
+  }
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
+async function newSession() {
+  const amount = parseFloat($("budget-input").value) || 2.0;
+  const res = await fetch("/api/sessions", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ budget: amount }),
+  });
+  const data = await res.json();
+  state.sessionId = data.session_id;
+  state.ladder = data.ladder;
+  state.pricing = data.pricing;
+  state.total = data.budget;
+
+  $("messages").innerHTML = '<div class="empty-state"><b>Run started — budget $' + amount.toFixed(2) + '</b>Ask anything. Watch the sidebar as spend accrues.</div>';
+  $("session-fine").textContent = `Session ${data.session_id} · $${amount.toFixed(2)} budget`;
+  $("input").disabled = false;
+  $("send-btn").disabled = false;
+  $("input").focus();
+  renderLadder(state.ladder[0]);
+  renderStats(data);
+  renderEvents([]);
+}
+
+async function sendMessage() {
+  const input = $("input");
+  const content = input.value.trim();
+  if (!content || !state.sessionId) return;
+  input.value = "";
+  addMessage({ role: "user", content });
+  $("send-btn").disabled = true;
+
+  try {
+    const res = await fetch(`/api/sessions/${state.sessionId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      addMessage({ role: "assistant", content: data.detail || "error", action: "deny" });
+      return;
+    }
+    addMessage(data.message);
+    renderStats(data);
+    renderEvents(data.events);
+    renderLadder(data.message.model || state.ladder[0]);
+  } finally {
+    $("send-btn").disabled = false;
+  }
+}
+
+$("new-session-btn").addEventListener("click", newSession);
+$("send-btn").addEventListener("click", sendMessage);
+$("input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+newSession();
+</script>
+</body>
+</html>

@@ -103,3 +103,21 @@ tests/               # offline unit tests — no test hits a real API
 uv run pytest -q
 uv run ruff check .
 ```
+
+## Chat UI
+
+A small FastAPI app puts a chat window in front of the budget engine so you
+can watch reserve → call → settle happen live, message by message.
+
+```bash
+uv sync --extra web        # or --all-extras
+uv run uvicorn agent_cfo.webapp.server:app --port 8000
+```
+
+Open http://localhost:8000, set a starting budget, and chat. Each reply is
+tagged with the model actually used, whether the policy layer downgraded it,
+and the estimated vs. actual cost; the sidebar tracks remaining budget and
+the ladder in real time. If a tier's API key (`OPENAI_API_KEY`,
+`GOOGLE_API_KEY`) isn't set — or a local Ollama server isn't running for
+`llama-3` — that tier falls back to a simulated response so the demo runs
+with zero configuration, still priced at the tier's real rate.
