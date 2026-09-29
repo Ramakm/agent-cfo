@@ -11,3 +11,6 @@ build/
 .env
 .env.*
 !.env.example
+
+# Local scratch data (downloaded datasets, not committed)
+.scratch/

@@ -67,6 +67,28 @@ PRICING: dict[str, ModelPricing] = {
         input_per_million=5.00,
         output_per_million=15.00,
     ),
+    # Groq-hosted open-weight model. Added 2026-09-29: Groq retired self-serve
+    # Llama 3 pricing on 2026-08-26 (enterprise-only now), so this is the
+    # practical cheap/open-weight tier for testing today, not a Llama swap.
+    "openai/gpt-oss-20b": ModelPricing(
+        id="openai/gpt-oss-20b",
+        provider="groq",
+        tier="open-source",
+        context_window=131_072,
+        input_per_million=0.075,
+        output_per_million=0.30,
+        cache_read_per_million=0.0375,
+    ),
+    # OpenRouter free-tier slug. $0 but rate-limited (~20 req/min) and the
+    # specific model behind ":free" rotates over time (checked 2026-09-29).
+    "nvidia/nemotron-3-super-120b-a12b:free": ModelPricing(
+        id="nvidia/nemotron-3-super-120b-a12b:free",
+        provider="openrouter",
+        tier="open-source",
+        context_window=128_000,
+        input_per_million=0.0,
+        output_per_million=0.0,
+    ),
     # Kept for reference/fallback — not part of the active downgrade ladder.
     "claude-opus-5": ModelPricing(
         id="claude-opus-5",
